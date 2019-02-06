@@ -1,0 +1,77 @@
+---
+title: "Heron Island map - open source data from OSM"
+author: "MNitschke"
+date: "27 October 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rgeos")
+library("osmdata")
+library("ggspatial")
+```
+
+# Map of Heron Island/Reef using the open source data from www.openstreetmap.org
+
+```{r}
+# Define Heron Island bounding box
+bbox <- c(152.0009, -23.4248, 151.8991, -23.4795)
+
+# Download the shape data of the different map layers from OSM
+reef <- opq(bbox = bbox) %>%
+  add_osm_feature(key = "reef", value = "coral") %>%
+  osmdata_sf()
+
+island <- opq(bbox = bbox) %>%
+  add_osm_feature(key = "place", value = "island") %>%
+  osmdata_sf()
+
+forest <- opq(bbox = bbox) %>%
+  add_osm_feature(key = "natural", value = "wood") %>%
+  osmdata_sf()
+
+# Import site metadata. Replace the .csv file long and lat values with sampling site data
+
+sites <- read.csv("sites_metadata.csv")
+
+# NOTE: There is an extra column in the metadata called "pointcolour". The fill = sites$pointcolour in the annotate section in the code chunk below reads the colour names or hexidecimal colour value in as a vector. For a list of colours type colors() in the console. Hexidecimal colours (e.g. #C90000 for a dark red) you can find from a website online or in photoshop.
+
+# Plot
+ggplot() + 
+      geom_sf(data = reef$osm_polygons, 
+              fill = "aliceblue") +    
+      geom_sf(data = island$osm_polygons, 
+              fill = "antiquewhite1") +
+      geom_sf(data = forest$osm_polygons, 
+              fill = "darkgreen") +
+      annotate("point",
+            x = sites$long,
+            y = sites$lat,
+            shape = 21,
+            fill = sites$pointcolour,
+            size = 3) +
+      coord_sf(xlim = c(152.0009, 151.8991), 
+               ylim = c(-23.4248, -23.4795), 
+               expand = FALSE) +
+      theme(panel.grid.major = element_line(colour = gray(0.5), 
+            linetype = "dashed", size = 0.5), 
+            panel.background = element_rect(fill = "white"), 
+            panel.border = element_rect(fill = NA)) +
+      annotation_north_arrow(location = "br", 
+                             which_north = "true",
+                             pad_x = unit(0.2, "in"), 
+                             pad_y = unit(0.2, "in"),
+                             style = north_arrow_fancy_orienteering) +
+      annotation_scale(location = "tl", 
+                       width_hint = 0.25) +
+      xlab("Longitude") +
+      ylab("Lattitude")
+```
+
