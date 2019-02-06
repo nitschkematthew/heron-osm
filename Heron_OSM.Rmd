@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ggplot2")
 theme_set(theme_bw())
 library("sf")
-library("rgeos")
 library("osmdata")
 library("ggspatial")
 ```
