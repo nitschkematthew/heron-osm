@@ -82,6 +82,7 @@ library(data.table)
 library(dplyr)
 library(raster)
 library(grid)
+library(viridis)
 
 x <- readGDAL("D:/Post-Doc/Rproj/Heron_map/HRCASI_full_zpl_pair13_dist_BATHY_5M_depth_detail.tif")
 ```
@@ -112,18 +113,28 @@ coords$layer <- layer
 rm(layer)
 
 coords <- coords %>% filter(layer != -999)
-# downsize df to 1/10 size to play
+# downsize df to 1/10 size to play around with plot quickly
 coords <- coords %>% filter(row_number() %% 10 == 0)
 
 ggplot() +
-	geom_tile(data = coords, aes(x = x, y = y, fill = layer, width = 0.001, height = 0.001), position = "identity") +
-  scale_fill_gradient2(low = "yellow", mid = "lightblue",
-  high = "blue", midpoint = 2, space = "Lab",
-  na.value = "grey50", guide = "colourbar", aesthetics = "fill") +
-  geom_sf(data = reef$osm_polygons, fill = NA) +    
+	geom_tile(data = coords, aes(x = x, y = y, fill = layer, width = 0.0001, height = 0.0005), position = "identity") +
+  scale_fill_viridis(direction = -1, option = "magma", name = "Depth (m)") +
+  geom_sf(data = reef$osm_polygons, fill = NA, alpha = 0.5) +    
   geom_sf(data = island$osm_polygons, fill = "antiquewhite1") +
   geom_sf(data = forest$osm_polygons, fill = "darkgreen") +
   annotate("point", x = sites$long, y = sites$lat, shape = 21, fill = sites$pointcolour, size = 3) +
-  coord_sf(xlim = c(152.0009, 151.9010), ylim = c(-23.4248, -23.4750), expand = FALSE)
+  coord_sf(xlim = c(152.0009, 151.9010), ylim = c(-23.4248, -23.4750), expand = FALSE) +
+  theme(panel.grid.major = element_line(colour = gray(0.5), 
+            linetype = "dashed", size = 0.5), 
+            panel.background = element_rect(fill = "white"), 
+            panel.border = element_rect(fill = NA)) +
+  annotation_north_arrow(location = "br", 
+                             which_north = "true",
+                             pad_x = unit(0.2, "in"), 
+                             pad_y = unit(0.2, "in"),
+                             style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", width_hint = 0.25) +
+  xlab("Longitude") +
+  ylab("Lattitude")
 ```
 
