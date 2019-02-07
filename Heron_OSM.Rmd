@@ -74,3 +74,56 @@ ggplot() +
       ylab("Lattitude")
 ```
 
+# Add bathymetry raster.... all experimental below here. But it works!
+
+```{r}
+library(rgdal)
+library(data.table)
+library(dplyr)
+library(raster)
+library(grid)
+
+x <- readGDAL("D:/Post-Doc/Rproj/Heron_map/HRCASI_full_zpl_pair13_dist_BATHY_5M_depth_detail.tif")
+```
+
+```{r}
+#http://khalo.github.io/r/spatial/2015/04/24/heatmap/
+  
+sgdf_transform = function(sgdf){
+  dim <- sgdf@grid@cells.dim
+  bbox <- sgdf@bbox
+  r <- raster(xmn=bbox[1,1], xmx=bbox[1,2], ymn=bbox[2,1], ymx=bbox[2,2], ncols=dim[1], nrows=dim[2])
+  r <- setValues(r,matrix(sgdf@data$band1, nrow = dim[1], ncol = dim[2]) %>% t()) 
+  data <- rasterToPoints(r) %>% data.table()
+  return(data)
+}
+
+x_data <- sgdf_transform(x)
+rm(x)
+coordinates(x_data) <- c("x", "y")
+proj4string(x_data) <- CRS("+proj=utm +zone=56 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
+CRS.new <- CRS("+proj=longlat +zone=56 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
+trans <- spTransform(x_data, CRS.new)
+rm(x_data)
+layer <- trans$layer
+coords <- as.data.frame(trans@coords)
+rm(trans)
+coords$layer <- layer
+rm(layer)
+
+coords <- coords %>% filter(layer != -999)
+# downsize df to 1/10 size to play
+coords <- coords %>% filter(row_number() %% 10 == 0)
+
+ggplot() +
+	geom_tile(data = coords, aes(x = x, y = y, fill = layer, width = 0.001, height = 0.001), position = "identity") +
+  scale_fill_gradient2(low = "yellow", mid = "lightblue",
+  high = "blue", midpoint = 2, space = "Lab",
+  na.value = "grey50", guide = "colourbar", aesthetics = "fill") +
+  geom_sf(data = reef$osm_polygons, fill = NA) +    
+  geom_sf(data = island$osm_polygons, fill = "antiquewhite1") +
+  geom_sf(data = forest$osm_polygons, fill = "darkgreen") +
+  annotate("point", x = sites$long, y = sites$lat, shape = 21, fill = sites$pointcolour, size = 3) +
+  coord_sf(xlim = c(152.0009, 151.9010), ylim = c(-23.4248, -23.4750), expand = FALSE)
+```
+
